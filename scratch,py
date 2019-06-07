@@ -1,0 +1,57 @@
+#---Cell 1---
+import sqlite3
+import pandas as pd
+import math
+from scipy import stats
+import seaborn as sns
+import numpy as np
+
+from statsmodels.formula.api import ols
+import statsmodels.api as sm
+
+#---Cell 2---
+connection = sqlite3.connect('Northwind_small.sqlite')
+cursor = connection.cursor()
+orderDetail_df = sql_select_to_df("""select * from OrderDetail;""")
+
+#---Cell3---
+def sql_select_to_df(SQL_COMMAND, cursor=cursor):
+    results = cursor.execute(SQL_COMMAND).fetchall()
+    df = pd.DataFrame(results)
+    df.columns = [i[0] for i in cursor.description]
+    return df
+
+#---Cell4---
+orders_employees_df = sql_select_to_df("""SELECT O.EmployeeId, E.BirthDate, COUNT(O.Id) AS Total_Orders  
+                                FROM [Order] AS O
+                                JOIN Employee as E
+                                ON O.EmployeeId = E.Id
+                                GROUP BY O.EmployeeId
+                                """)
+
+orders_employees_all = sql_select_to_df("""SELECT *
+                                FROM [Order] AS O
+                                JOIN Employee as E
+                                ON O.EmployeeId = E.Id
+                                GROUP BY O.EmployeeId
+                                """)
+orders_employees_all
+
+#---Cell5---
+employees_df = sql_select_to_df("""SELECT *
+                                FROM OrderDetail
+                        """)
+
+employees_df
+
+#---Cell6---
+pd.options.display.max_columns = None
+
+orders_employees_df
+#display(orders_employees_df)
+
+#---Cell 7---
+formula = 'Total_Orders ~ C(BirthDate)'
+lm = ols(formula, orders_employees_df).fit()
+table = sm.stats.anova_lm(lm, typ=2)
+print(table)
